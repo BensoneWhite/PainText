@@ -105,28 +105,12 @@ public class PainText : BaseUnityPlugin
             On.FLabel.CreateTextQuads += TextQuadsHook;
             On.HUD.DialogBox.Message.ctor += DialogBoxHook;
 
-            if(_Debug) On.Menu.Remix.MixedUI.LabelTest.TrimText += LabelTest_TrimText;
-
-            File.Delete("exceptionLog.txt");
-            File.Delete("consoleLog.txt");
+            if (_Debug) On.Menu.Remix.MixedUI.LabelTest.TrimText += LabelTest_TrimText;
 
             StringBuilder stringBuilder = new();
             IntPtr activeWindow = GetActiveWindow();
             GetWindowText(activeWindow, stringBuilder, stringBuilder.Capacity);
             SetWindowText(activeWindow, TransformText(stringBuilder.ToString()));
-
-            IL.RainWorld.HandleLog += HandleLogHook;
-            On.RainWorld.HandleLog += HandleLogHook1;
-            if (File.Exists("exceptionLog.txt"))
-            {
-                File.AppendAllText("exceptionLog.txt", TransformText(File.ReadAllText("exceptionLog.txt")));
-                File.Delete("exceptionLog.txt");
-            }
-            if (File.Exists("consoleLog.txt"))
-            {
-                File.AppendAllText("consoleLog.txt", TransformText(File.ReadAllText("consoleLog.txt")));
-                File.Delete("consoleLog.txt");
-            }
         }
         catch (Exception ex)
         {
@@ -140,65 +124,6 @@ public class PainText : BaseUnityPlugin
 
         return orig(text, width, addDots, bigText);
     }
-
-    private void HandleLogHook1(On.RainWorld.orig_HandleLog orig, RainWorld rw, string logString, string stackTrace, LogType logType)
-    {
-        try
-        {
-            orig(rw, TransformText(logString), TransformText(stackTrace), logType);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError(e);
-            Debug.LogException(e);
-        }
-    }
-
-    private void HandleLogHook(ILContext il)
-    {
-        try
-        {
-            ILCursor c = new(il);
-            while (c.TryGotoNext(new Func<Instruction, bool>[] { i => ILPatternMatchingExt.MatchLdstr(i, "exceptionLog.txt") }))
-            {
-                c.Next.Operand = "ifeisaticoifealpaftitiaocintQalaocgam.txt";
-            }
-            c.Goto(0, 0, false);
-            while (c.TryGotoNext(new Func<Instruction, bool>[] { i => ILPatternMatchingExt.MatchLdstr(i, "consoleLog.txt") }))
-            {
-                c.Next.Operand = "IcohaocintimsaocqalifeQalaocgam.txt";
-            }
-        }
-        catch (Exception e)
-        {
-            Debug.LogError(e);
-            Debug.LogException(e);
-        }
-    }
-
-    private static string TransformText(string input)
-    {
-        if (string.IsNullOrEmpty(input))
-            return input;
-
-        string originalInput = input;
-        if (transformedTextCache.ContainsKey(originalInput))
-            return transformedTextCache[originalInput];
-
-        foreach (KeyValuePair<string, string> replacement in CharReplacements)
-        {
-            input = input.Replace(replacement.Key, replacement.Value);
-        }
-
-        if (input.Length > 100)
-        {
-            input = input.Substring(0, 100);
-        }
-
-        transformedTextCache[originalInput] = input;
-        return input;
-    }
-
 
     private void DialogBoxHook(On.HUD.DialogBox.Message.orig_ctor orig, HUD.DialogBox.Message message, string text, float xPos, float yPos, int line)
     {
@@ -237,5 +162,47 @@ public class PainText : BaseUnityPlugin
             Debug.LogException(e);
         }
         orig(label);
+    }
+
+    private static string TransformText(string input)
+    {
+        if (!ShouldTransformText(input))
+            return input;
+
+        if (string.IsNullOrEmpty(input))
+            return input;
+
+        string originalInput = input;
+        if (transformedTextCache.ContainsKey(originalInput))
+            return transformedTextCache[originalInput];
+
+        foreach (KeyValuePair<string, string> replacement in CharReplacements)
+        {
+            input = input.Replace(replacement.Key, replacement.Value);
+        }
+
+        if (_Debug) DebugWarning($"Input string: '{input}', Length: {input.Length}");
+
+        if (input.Length > 100)
+        {
+            input = input.Substring(0, Math.Min(100, input.Length));
+        }
+
+        transformedTextCache[originalInput] = input;
+        return input;
+    }
+
+    private static bool ShouldTransformText(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return false;
+
+        //Changing the region names is causing unexpected behaviour inside the game, let's just ignore those strings
+        foreach (string region in Region.GetFullRegionOrder())
+        {
+            if (input.Contains(region)) return false;
+        }
+
+        return true;
     }
 }
