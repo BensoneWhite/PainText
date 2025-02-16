@@ -7,13 +7,9 @@ global using System.IO;
 global using System.Linq;
 global using System.Runtime.InteropServices;
 global using System.Text;
-global using System.Text.RegularExpressions;
-global using HUD;
-global using IL;
 global using Mono.Cecil.Cil;
 global using MonoMod.Cil;
-global using On;
-global using On.HUD;
 global using RWCustom;
+global using BepInEx.Logging;
 
 [assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]

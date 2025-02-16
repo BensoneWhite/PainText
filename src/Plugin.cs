@@ -1,20 +1,21 @@
-﻿using UnityEngine;
+﻿namespace PainText;
 
-namespace PainText;
-
-[BepInPlugin(GUID: PluginAuthors, Name: PluginName, Version: PluginVersion)]
+[BepInPlugin(MOD_ID, MOD_NAME, VERSION)]
 public class PainText : BaseUnityPlugin
 {
-    public const string PluginAuthors = "BensoneWhite";
-    public const string PluginName = "PainText";
-    public const string PluginVersion = "1.0.1";
+    public const string MOD_ID = "PainText";
+    public const string AUTHORS = "BensoneWhite";
+    public const string MOD_NAME = "PainText";
+    public const string VERSION = "0.0.5";
 
     public bool IsInit;
 
-    private void LogInfo(object data)
-    {
-        Logger.LogInfo(data);
-    }
+    public new static ManualLogSource Logger;
+
+    public static void DebugLog(object ex) => Logger.LogInfo(ex);
+    public static void DebugWarning(object ex) => Logger.LogWarning(ex);
+    public static void DebugError(object ex) => Logger.LogError(ex);
+    public static void DebugFatal(object ex) => Logger.LogFatal(ex);
 
     [DllImport("user32.dll")]
     public static extern bool SetWindowText(IntPtr hwnd, string lpString);
@@ -25,197 +26,7 @@ public class PainText : BaseUnityPlugin
     [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
     internal static extern int GetWindowText(IntPtr hWnd, [Out] StringBuilder lpString, int nMaxCount);
 
-    public void OnEnable()
-    {
-        Debug.LogWarning($"{PluginName} is loading... {PluginVersion}");
-
-        On.RainWorld.OnModsInit += ModsInitHook;
-    }
-
-    private void ModsInitHook(On.RainWorld.orig_OnModsInit orig, RainWorld rw)
-    {
-        try
-        {
-            //Never call two times the same hooks or everything is going to get weird
-            if (IsInit) return;
-            IsInit = true;
-
-            //Main Features for chaning all the text
-            On.FLabel.CreateTextQuads += TextQuadsHook;
-            On.HUD.DialogBox.Message.ctor += DialogBoxHook;
-            //On.Menu.Remix.MixedUI.LabelTest.TrimText += LabelTest_TrimText;
-
-            //Delete old logs on start
-            File.Delete("exceptionLog.txt");
-            File.Delete("consoleLog.txt");
-
-            //Change the windows name
-            StringBuilder stringBuilder = new();
-            IntPtr activeWindow = GetActiveWindow();
-            GetWindowText(activeWindow, stringBuilder, stringBuilder.Capacity);
-            SetWindowText(activeWindow, TransformText(stringBuilder.ToString()));
-
-            //Handle all the logs 
-            IL.RainWorld.HandleLog += HandleLogHook;
-            On.RainWorld.HandleLog += HandleLogHook1;
-            if (File.Exists("exceptionLog.txt"))
-            {
-                File.AppendAllText("exceptionLog.txt", TransformText(File.ReadAllText("exceptionLog.txt")));
-                File.Delete("exceptionLog.txt");
-            }
-            if (File.Exists("consoleLog.txt"))
-            {
-                File.AppendAllText("consoleLog.txt", TransformText(File.ReadAllText("consoleLog.txt")));
-                File.Delete("consoleLog.txt");
-            }
-        }
-        catch (Exception ex)
-        {
-            LogInfo(ex);
-            throw;
-        }
-        finally
-        {
-            orig(rw);
-        }
-    }
-
-    private string LabelTest_TrimText(On.Menu.Remix.MixedUI.LabelTest.orig_TrimText orig, string text, float width, bool addDots, bool bigText)
-    {
-        try
-        {
-            Debug.LogWarning(orig(text, width, addDots, bigText));
-            return orig(text, width, addDots, bigText);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError(e);
-            Debug.LogException(e);
-        }
-        return orig(text, width, addDots, bigText);
-    }
-
-    //This is for hooks never happened an error
-    private void HandleLogHook1(On.RainWorld.orig_HandleLog orig, RainWorld rw, string logString, string stackTrace, LogType logType)
-    {
-        try
-        {
-            orig(rw, TransformText(logString), TransformText(stackTrace), logType);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError(e);
-            Debug.LogException(e);
-        }
-    }
-
-    //This is for getting all the Logs data into custom one
-    private void HandleLogHook(ILContext il)
-    {
-        try
-        {
-            ILCursor c = new(il);
-            while (c.TryGotoNext(new Func<Instruction, bool>[1]
-            {
-        i => ILPatternMatchingExt.MatchLdstr(i, "exceptionLog.txt")
-            }))
-            {
-                c.Next.Operand = "ifeisaticoifealpaftitiaocintQalaocgam.txt";
-            }
-            c.Goto(0, 0, false);
-            while (c.TryGotoNext(new Func<Instruction, bool>[1]
-            {
-        i => ILPatternMatchingExt.MatchLdstr(i, "consoleLog.txt")
-            }))
-            {
-                c.Next.Operand = "IcohaocintimsaocqalifeQalaocgam.txt";
-            }
-        }
-        catch (Exception e)
-        {
-            Debug.LogError(e);
-            Debug.LogException(e);
-        }
-    }
-
     private static readonly Dictionary<string, string> transformedTextCache = new();
-
-    private static string TransformText(string input)
-    {
-
-        if (string.IsNullOrEmpty(input) || input.Length < 0)
-        {
-            return input; 
-        } // Return if null or empty
-
-        bool isTransformed = false;
-
-        // Check if the transformed text for the input is already cached
-        if (transformedTextCache.ContainsKey(input) && !(input.Length < 0))
-        {
-            // If cached, return the cached transformed text
-            isTransformed = true;
-            return transformedTextCache[input];
-        }
-
-        if(!isTransformed)
-        {
-            // If not cached, perform the transformation
-            foreach (KeyValuePair<string, string> replacement in CharReplacements)
-            {
-                if (!(input.Length < 0))
-                {
-                    input = input.Replace(replacement.Key.ToString(), replacement.Value);
-                }
-
-            }
-        }
-
-        // Cache the transformed text
-        transformedTextCache[input] = input;
-
-        return input;
-    }
-
-    //Never had a issue in this hook
-    private void DialogBoxHook(On.HUD.DialogBox.Message.orig_ctor orig, HUD.DialogBox.Message message, string text, float xPos, float yPos, int line)
-    {
-        try
-        {
-            text = TransformText(text);
-            orig(message, text, xPos, yPos, line);
-            message.longestLine = 1 + (int)Math.Floor(Custom.LerpMap((float)TransformText(text).Count((char f) => f == 'w' || f == 'W'), 0f, (float)text.Length, (float)message.longestLine * 0.95f, (float)message.longestLine * 1.5f));
-        }
-        catch (Exception e)
-        {
-            Debug.LogError(e);
-            Debug.LogException(e);
-        }
-    }
-
-    private void TextQuadsHook(On.FLabel.orig_CreateTextQuads orig, FLabel label)
-    {
-        orig(label);
-
-        try
-        {
-            if (label._doesTextNeedUpdate || label._numberOfFacetsNeeded == 0)
-            {
-                //The String becomes null and resets the calculation
-                label._text = TransformText(label._text);
-            }
-        }
-        catch (Exception e)
-        {
-            Debug.LogError(e);
-            Debug.LogException(e);
-        }
-        finally
-        {
-            orig(label);
-        }
-
-    }
 
     private static readonly Dictionary<string, string> CharReplacements = new()
     {
@@ -273,4 +84,158 @@ public class PainText : BaseUnityPlugin
         { "Y", "Yop" },
         { "Z", "Zap" }
     };
+
+    private static bool _Debug = false;
+
+    public void OnEnable()
+    {
+        Logger = base.Logger;
+        DebugWarning($"{MOD_NAME} is loading.... {VERSION}");
+        On.RainWorld.OnModsInit += ModsInitHook;
+    }
+
+    private void ModsInitHook(On.RainWorld.orig_OnModsInit orig, RainWorld self)
+    {
+        orig(self);
+        try
+        {
+            if (IsInit) return;
+            IsInit = true;
+
+            On.FLabel.CreateTextQuads += TextQuadsHook;
+            On.HUD.DialogBox.Message.ctor += DialogBoxHook;
+
+            if(_Debug) On.Menu.Remix.MixedUI.LabelTest.TrimText += LabelTest_TrimText;
+
+            File.Delete("exceptionLog.txt");
+            File.Delete("consoleLog.txt");
+
+            StringBuilder stringBuilder = new();
+            IntPtr activeWindow = GetActiveWindow();
+            GetWindowText(activeWindow, stringBuilder, stringBuilder.Capacity);
+            SetWindowText(activeWindow, TransformText(stringBuilder.ToString()));
+
+            IL.RainWorld.HandleLog += HandleLogHook;
+            On.RainWorld.HandleLog += HandleLogHook1;
+            if (File.Exists("exceptionLog.txt"))
+            {
+                File.AppendAllText("exceptionLog.txt", TransformText(File.ReadAllText("exceptionLog.txt")));
+                File.Delete("exceptionLog.txt");
+            }
+            if (File.Exists("consoleLog.txt"))
+            {
+                File.AppendAllText("consoleLog.txt", TransformText(File.ReadAllText("consoleLog.txt")));
+                File.Delete("consoleLog.txt");
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugError(ex);
+        }
+    }
+
+    private string LabelTest_TrimText(On.Menu.Remix.MixedUI.LabelTest.orig_TrimText orig, string text, float width, bool addDots, bool bigText)
+    {
+        DebugWarning(orig(text, width, addDots, bigText));
+
+        return orig(text, width, addDots, bigText);
+    }
+
+    private void HandleLogHook1(On.RainWorld.orig_HandleLog orig, RainWorld rw, string logString, string stackTrace, LogType logType)
+    {
+        try
+        {
+            orig(rw, TransformText(logString), TransformText(stackTrace), logType);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError(e);
+            Debug.LogException(e);
+        }
+    }
+
+    private void HandleLogHook(ILContext il)
+    {
+        try
+        {
+            ILCursor c = new(il);
+            while (c.TryGotoNext(new Func<Instruction, bool>[] { i => ILPatternMatchingExt.MatchLdstr(i, "exceptionLog.txt") }))
+            {
+                c.Next.Operand = "ifeisaticoifealpaftitiaocintQalaocgam.txt";
+            }
+            c.Goto(0, 0, false);
+            while (c.TryGotoNext(new Func<Instruction, bool>[] { i => ILPatternMatchingExt.MatchLdstr(i, "consoleLog.txt") }))
+            {
+                c.Next.Operand = "IcohaocintimsaocqalifeQalaocgam.txt";
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError(e);
+            Debug.LogException(e);
+        }
+    }
+
+    private static string TransformText(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+
+        string originalInput = input;
+        if (transformedTextCache.ContainsKey(originalInput))
+            return transformedTextCache[originalInput];
+
+        foreach (KeyValuePair<string, string> replacement in CharReplacements)
+        {
+            input = input.Replace(replacement.Key, replacement.Value);
+        }
+
+        if (input.Length > 100)
+        {
+            input = input.Substring(0, 100);
+        }
+
+        transformedTextCache[originalInput] = input;
+        return input;
+    }
+
+
+    private void DialogBoxHook(On.HUD.DialogBox.Message.orig_ctor orig, HUD.DialogBox.Message message, string text, float xPos, float yPos, int line)
+    {
+        try
+        {
+            text = TransformText(text);
+            orig(message, text, xPos, yPos, line);
+            message.longestLine = 1 + (int)Math.Floor(
+                Custom.LerpMap(
+                    (float)TransformText(text).Count(f => f == 'w' || f == 'W'),
+                    0f,
+                    (float)text.Length,
+                    message.longestLine * 0.95f,
+                    message.longestLine * 1.5f)
+            );
+        }
+        catch (Exception e)
+        {
+            Debug.LogError(e);
+            Debug.LogException(e);
+        }
+    }
+
+    private void TextQuadsHook(On.FLabel.orig_CreateTextQuads orig, FLabel label)
+    {
+        try
+        {
+            if (label._doesTextNeedUpdate || label._numberOfFacetsNeeded == 0)
+            {
+                label._text = TransformText(label._text);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError(e);
+            Debug.LogException(e);
+        }
+        orig(label);
+    }
 }
