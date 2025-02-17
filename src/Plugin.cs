@@ -6,16 +6,14 @@ public class PainText : BaseUnityPlugin
     public const string MOD_ID = "PainText";
     public const string AUTHORS = "BensoneWhite";
     public const string MOD_NAME = "PainText";
-    public const string VERSION = "0.0.5";
+    public const string VERSION = "1.0.5";
 
     public bool IsInit;
 
     public new static ManualLogSource Logger;
 
-    public static void DebugLog(object ex) => Logger.LogInfo(ex);
     public static void DebugWarning(object ex) => Logger.LogWarning(ex);
     public static void DebugError(object ex) => Logger.LogError(ex);
-    public static void DebugFatal(object ex) => Logger.LogFatal(ex);
 
     [DllImport("user32.dll")]
     public static extern bool SetWindowText(IntPtr hwnd, string lpString);
@@ -26,6 +24,7 @@ public class PainText : BaseUnityPlugin
     [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
     internal static extern int GetWindowText(IntPtr hWnd, [Out] StringBuilder lpString, int nMaxCount);
 
+    //Caching text, so it's not calculated every time user moves from UI's labels
     private static readonly Dictionary<string, string> transformedTextCache = new();
 
     private static readonly Dictionary<string, string> CharReplacements = new()
