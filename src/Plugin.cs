@@ -106,7 +106,7 @@ public class PainText : BaseUnityPlugin
             On.FLabel.CreateTextQuads += TextQuadsHook;
             On.HUD.DialogBox.Message.ctor += DialogBoxHook;
 
-            if (_Debug) On.Menu.Remix.MixedUI.LabelTest.TrimText += LabelTest_TrimText;
+            On.Menu.Remix.MixedUI.LabelTest.TrimText += LabelTest_TrimText;
 
             StringBuilder stringBuilder = new();
             IntPtr activeWindow = GetActiveWindow();
@@ -193,11 +193,9 @@ public class PainText : BaseUnityPlugin
 
     private static string TransformText(string input)
     {
-        //if (!ShouldTransformText(input))
-        //    return input;
-
-        if (string.IsNullOrEmpty(input))
+        if (!ShouldTransformText(input) || string.IsNullOrEmpty(input))
             return input;
+
 
         string originalInput = input;
         if (transformedTextCache.ContainsKey(originalInput))
@@ -223,16 +221,16 @@ public class PainText : BaseUnityPlugin
     }
 
     //Placeholder security check 
-    //private static bool ShouldTransformText(string input)
-    //{
-    //    if (string.IsNullOrWhiteSpace(input))
-    //        return false;
+    private static bool ShouldTransformText(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return false;
 
-    //    foreach (string region in Region.GetFullRegionOrder())
-    //    {
-    //        if (input.Contains(region)) return false;
-    //    }
+        //foreach (string region in Region.GetFullRegionOrder())
+        //{
+        //    if (input.Contains(region)) return false;
+        //}
 
-    //    return true;
-    //}
+        return true;
+    }
 }
