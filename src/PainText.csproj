@@ -2,7 +2,7 @@
     
     <PropertyGroup>
         <TargetFramework>net48</TargetFramework>
-        <LangVersion>11</LangVersion>
+        <LangVersion>latest</LangVersion>
     </PropertyGroup>
     
     <ItemGroup>
@@ -13,7 +13,7 @@
 
 	<Target Name="GenerateMod" AfterTargets="PostBuildEvent">
 		<ItemGroup>
-			<RemovePlugins Include="../mod/newest/plugins/*.dll" />
+			<RemovePlugins Include="../mod/newest/plugins/*PainText.dll" />
 			<RemovePDBs Include="$(OutDir)*.pdb" />
 		</ItemGroup>
 		<ItemGroup>

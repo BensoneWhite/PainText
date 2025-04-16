@@ -3,14 +3,16 @@
 [BepInPlugin(MOD_ID, MOD_NAME, VERSION)]
 public class PainText : BaseUnityPlugin
 {
-    public const string MOD_ID = "PainText";
+    public const string MOD_ID = "Paintext";
     public const string AUTHORS = "BensoneWhite";
     public const string MOD_NAME = "PainText";
-    public const string VERSION = "1.0.5";
+    public const string VERSION = "1.1.0";
 
     public bool IsInit;
 
     public new static ManualLogSource Logger;
+
+    public RemixMenu remixMenuInstance;
 
     public static void DebugWarning(object ex) => Logger.LogWarning(ex);
     public static void DebugError(object ex) => Logger.LogError(ex);
@@ -110,6 +112,10 @@ public class PainText : BaseUnityPlugin
             IntPtr activeWindow = GetActiveWindow();
             GetWindowText(activeWindow, stringBuilder, stringBuilder.Capacity);
             SetWindowText(activeWindow, TransformText(stringBuilder.ToString()));
+
+            On.ProcessManager.RequestMainProcessSwitch_ProcessID += ProcessManager_RequestMainProcessSwitch_ProcessID;
+
+            MachineConnector.SetRegisteredOI(MOD_ID, remixMenuInstance = new RemixMenu());
         }
         catch (Exception ex)
         {
@@ -117,11 +123,33 @@ public class PainText : BaseUnityPlugin
         }
     }
 
+    private void ProcessManager_RequestMainProcessSwitch_ProcessID(On.ProcessManager.orig_RequestMainProcessSwitch_ProcessID orig, ProcessManager self, ProcessManager.ProcessID ID)
+    {
+        if(ID == ProcessManager.ProcessID.Game)
+        {
+            transformedTextCache.Clear();
+        }
+        orig(self, ID);
+    }
+
     private string LabelTest_TrimText(On.Menu.Remix.MixedUI.LabelTest.orig_TrimText orig, string text, float width, bool addDots, bool bigText)
     {
-        DebugWarning(orig(text, width, addDots, bigText));
+        try
+        {
+            if (width <= 0)
+                return string.Empty;
 
-        return orig(text, width, addDots, bigText);
+            text = TransformText(text);
+
+            return orig(text, width, addDots, bigText);
+        }
+        catch (Exception ex)
+        {
+            DebugError(ex);
+
+            return orig(text, width, addDots, bigText);
+        }
+
     }
 
     private void DialogBoxHook(On.HUD.DialogBox.Message.orig_ctor orig, HUD.DialogBox.Message message, string text, float xPos, float yPos, int line)
@@ -165,8 +193,8 @@ public class PainText : BaseUnityPlugin
 
     private static string TransformText(string input)
     {
-        if (!ShouldTransformText(input))
-            return input;
+        //if (!ShouldTransformText(input))
+        //    return input;
 
         if (string.IsNullOrEmpty(input))
             return input;
@@ -182,6 +210,9 @@ public class PainText : BaseUnityPlugin
 
         if (_Debug) DebugWarning($"Input string: '{input}', Length: {input.Length}");
 
+        //Remix menu value is null
+        //int desiredLenght = RemixMenu.OptimizedMode.Value ? 500 : 100;
+
         if (input.Length > 100)
         {
             input = input.Substring(0, Math.Min(100, input.Length));
@@ -191,17 +222,17 @@ public class PainText : BaseUnityPlugin
         return input;
     }
 
-    private static bool ShouldTransformText(string input)
-    {
-        if (string.IsNullOrWhiteSpace(input))
-            return false;
+    //Placeholder security check 
+    //private static bool ShouldTransformText(string input)
+    //{
+    //    if (string.IsNullOrWhiteSpace(input))
+    //        return false;
 
-        //Changing the region names is causing unexpected behaviour inside the game, let's just ignore those strings
-        foreach (string region in Region.GetFullRegionOrder())
-        {
-            if (input.Contains(region)) return false;
-        }
+    //    foreach (string region in Region.GetFullRegionOrder())
+    //    {
+    //        if (input.Contains(region)) return false;
+    //    }
 
-        return true;
-    }
+    //    return true;
+    //}
 }

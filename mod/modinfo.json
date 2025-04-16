@@ -1,9 +1,9 @@
 {
-  "id": "paintext",
+  "id": "Paintext",
   "name": "PainText",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "authors": "BensoneWhite",
-  "target_game_version": "v1.9",
+  "target_game_version": "v1.10.2",
   "description": "This mod changes the text throughout the entire game, it's really funny play Expedition with this. This mod is inspired in the UwU mod from Henpemaz",
   "requirements": [],
   "requirements_names": [],
